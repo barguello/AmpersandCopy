@@ -1,0 +1,3 @@
+populate_core_database.py is used to populate the Ampersand database with Ampersand core business data.
+
+all other python modules are slave modules and the csv's hold the Ampersand core business data

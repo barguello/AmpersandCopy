@@ -1,0 +1,8 @@
+{% extends 'production/component_form.html' %}
+
+{% block pageHeader %}Edit Panel Depth{% endblock %}
+
+{% block cancel_button %}
+	{% url 'panel_depth_list' as cancel_url %}
+	{{ block.super }}
+{% endblock %}

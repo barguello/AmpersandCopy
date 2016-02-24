@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block pageHeader %}Cutting Patterns - Create/Edit/Delete{% endblock %}
+
+{% block content %}
+
+<form name="CuttingPatternForm" method="POST">
+<div style="display:-webkit-box;">
+    <div style="width:70%;">
+        Current Pattern ID: <b>{{patternId}}</b><br />
+        {% csrf_token %}
+        Panel Size: {{ form.tercero_panel_sizes}} {{ form.original_instructions.as_hidden }}<br />
+        Grades: {{form.grade_choice_1}}, {{form.grade_choice_2}}, {{form.grade_choice_3}}, {{form.grade_choice_4}}, {{form.grade_choice_5}}<br />
+        Instructions:<br />
+				<div class="well well-sm text-nowrap cutting-patterns-preview">{{ formatted_instructions|safe }}</div>
+        <pre>
+        {{form.instr1}}<br />
+        {{form.instr2}}<br />
+        {{form.instr3}}<br />
+        {{form.instr4}}<br />
+        {{form.instr5}}<br />
+        {{form.instr6}}
+        </pre>
+        Quantity: {{form.output_quantity1}}, Size: {{form.output_size1}}, Cradle? {{form.isCradle1}}, Primary? {{form.isPrimary1}}<br />
+        Quantity: {{form.output_quantity2}}, Size: {{form.output_size2}}, Cradle? {{form.isCradle2}}, Primary? {{form.isPrimary2}}<br />
+        Quantity: {{form.output_quantity3}}, Size: {{form.output_size3}}, Cradle? {{form.isCradle3}}, Primary? {{form.isPrimary3}}<br />
+        Quantity: {{form.output_quantity4}}, Size: {{form.output_size4}}, Cradle? {{form.isCradle4}}, Primary? {{form.isPrimary4}}<br />
+        Quantity: {{form.output_quantity5}}, Size: {{form.output_size5}}, Cradle? {{form.isCradle5}}, Primary? {{form.isPrimary5}}<br />
+        <input type="submit" name="submitPatternForm" class="btn btn-primary" value="Update" />
+        <input type="submit" name="submitCopyPattern" class="btn btn-primary" value="Copy" />
+        <a class="btn btn-primary" href="/production/cuttingpatterns/retailcuts">Back</a><br />
+        <br /><br /><br/>Lookup: <input type="text" size="5" id="id_lookupid" /><input type="submit" name="submitPatternLookup" class="btn btn-primary" value="Lookup Another Pattern"
+        onclick="navigateToPattern();return false;">
+    </div>
+
+
+    <div style="display:none;">
+    Vars:<br />
+    testvar: {{ testvar }}<br />
+    testvarb: {{ testvarb }}<br />
+    testvarc: {{ testvarc }}<br />
+    status: {{ status }}
+    </div>
+</div>
+</form>
+{% endblock %}
+{% block scriptcontent %}
+    <script type="text/javascript">
+        // init controls
+        $( document ).ready(function() {
+            $( "input[id^=id_instr]" ).css({width:"50%"});
+
+					var $instructions_fields = $(':input[name^="instr"]')
+					$instructions_fields.on('keyup', function () {
+						var instructions = [];
+						$instructions_fields.each(function (index, item) {
+							instructions.push($(item).val())
+						});
+						var instructions_text = instructions.join('___'); // 'A:47.8  I:30.25->A:31 I:30.25(1)___I:16.25->A:31.8 I:20.2(1)'
+						$.getJSON(
+								"{% url 'cutting_instruction_format' %}",
+								{'instructions': instructions_text},
+								function (data) {
+									$('.cutting-patterns-preview').html(data.formatted_instructions)
+								}
+						);
+					})
+
+        });
+
+        function navigateToPattern() {
+            var ur = '/production/cuttingpatterns/retailcutedit?id='+ $("#id_lookupid").val();
+            document.location.href=ur;
+        }
+    </script>
+{% endblock %}

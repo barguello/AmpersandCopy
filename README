@@ -1,0 +1,6 @@
+Ampersand - Application settings
+database_migration_notes - instructions for creating the database
+djangonotes.txt - notes for things we have been learning about Django so we don't repeat mistakes
+manage.py - module for utilities such as running the server and creating/editing database
+templates - site templates
+production - this is the production UI

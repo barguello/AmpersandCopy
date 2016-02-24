@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block pageHeader %}WIP Entry{% endblock %}
+
+{% block content %}
+    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+        <li><a href="#enterByTercero" data-toggle="tab">Tercero</a></li>
+        <li><a href="#enterByRetailCuts" data-toggle="tab">Retail Cuts</a></li>
+        <li><a href="#enterBySprayed" data-toggle="tab">Sprayed</a></li>
+        <li><a href="#enterByFramed" data-toggle="tab">Framed</a></li>
+        <li><a href="#enterByGlued" data-toggle="tab">Glued</a></li>
+    </ul>
+    <form name="InventoryEntryForm" method="POST">
+    {% csrf_token %}
+    <div id="my-tab-content" class="tab-content" style="max-width:300px;">
+        <div class="tab-pane" id="enterByTercero">
+            {{ queryTerceroForm.as_p }}
+            <input type="submit" name="submitQueryTercero" value="Load Terceros" />
+        </div>
+        <div class="tab-pane" id="enterByRetailCuts">                  
+            {{ queryRetailForm.as_p }}
+            <input type="submit" name="submitQueryRetail" value="Load Retail Cuts" />
+        </div>
+        <div class="tab-pane" id="enterBySprayed">
+            {{ querySprayedForm.as_p }}
+            <input type="submit" name="submitQuerySprayed" value="Load Sprayed" />
+        </div>
+        <div class="tab-pane" id="enterByFramed">
+            {{ queryFramedForm.as_p }}
+            <input type="submit" name="submitQueryFramed" value="Load Framed" />
+        </div>
+        <div class="tab-pane" id="enterByGlued">
+            {{ queryGluedForm.as_p }}
+            <input type="submit" name="submitQueryGlued" value="Load Glued" />
+        </div>
+    </div>
+
+    <div>
+        {% if entrySizes %}
+        <h3>{{queryType}}</h3>
+            <div>
+                <table class="table">
+                    {% for entrySize in entrySizes %}
+                        {% if entrySize.retail_size %}
+                            <tr>
+                                <th>Size</th>
+                                <th>Quantity</th>
+                            </tr>
+                            <tr>
+                                <td>{{entrySize.retail_size}}</td>
+                                <td><input type="number" min="0" step="1" 
+                                      name="quantityInputFor_{{queryType}}____{{entrySize.retail_size_id}}____{{entrySize.wip_id}}" value="{{entrySize.quantity}}" /></td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <th>Grade</th>
+                                <th>Quantity</th>
+                            </tr>
+                            <tr>
+                                <td>{{entrySize.grade}}</td>
+                                <td><input type="number" min="0" step="1" 
+                                      name="quantityInputFor_{{queryType}}____{{entrySize.grade}}____{{entrySize.wip_id}}" value="{{entrySize.quantity}}" /></td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </table>
+            </div>
+            <input type="submit" name="submitQuantities" value="Submit Quantities" />
+        {% endif %}
+
+        <div style="display:none;">
+        Vars:<br />
+        testvar: {{ testvar }}<br />
+        testvarb: {{ testvarb }}<br />
+        entrySizes: {{ entrySizes }}<br />
+        status: {{ status }}
+        </div>
+    </div>
+    </form>
+{% endblock %}
+{% block scriptcontent %}
+    <script type="text/javascript">
+        // set active tab
+        $( document ).ready(function() {
+            var status = '{{ status }}';
+            if (status.indexOf('submit query glued') === 0) {
+                $('#tabs a[href="#enterByGlued"]').tab('show');
+            } else if (status.indexOf('submit query framed') === 0) {
+                $('#tabs a[href="#enterByFramed"]').tab('show');
+            } else if (status.indexOf('submit query sprayed') === 0) {
+                $('#tabs a[href="#enterBySprayed"]').tab('show');
+            } else if (status.indexOf('submit query retail') === 0) {
+                $('#tabs a[href="#enterByRetailCuts"]').tab('show');
+            } else {
+                $('#tabs a[href="#enterByTercero"]').tab('show');
+            }
+
+            $("label[for='id_tercero_wip_date']").hide();
+        });
+    </script>
+{% endblock %}

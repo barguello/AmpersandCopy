@@ -1,0 +1,3 @@
+Page,Grade,TerceroLength,TerceroWidth,CuttingInstruction,Cradled,Quantity,Dimension1/1,Dimension1/2,Unit,Cradled,Quantity2,Dimension2/1,Dimension2/2,Unit2,Cradled,Quantity3,Dimension3/1,Dimension3/2,Unit3,Cradled,Quantity4,Dimension 1,Dimension 2,Unit4,Cradled,Quantity,Dimension 1,Dimension 2,Unit,Cradled,Quantity,Dimension 1,Dimension 2,Unit
+page1,48,48.5,18,A:48  I:20.25(2)->A:17.2 I:16.25(1)___I:6.25(1)->A:17.5 I:6.25(2)___I:4->A:4,1,2,16,20,in,1,2,6,6,in,0,1,4,4,in,,,,,,,,,,,,,,,
+page1,20c,48,18,A:47.75  I: 6(1)->A:17.2 I:8(2)___I:5(1)->A: 17.7 I:5(2) I:7(1)___I:12(2)->A:17 I:16___I: 5(1)->A:17.7 I:5(2) I:7(1)___I: 6(1)->A:17.2 I:8(2),0,4,6,8,in,0,4,5,5,in,0,2,5,7,in,0,2,12,16,in,,,,,,,,,,

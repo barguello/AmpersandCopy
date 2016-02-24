@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% load bootstrap3 %}
+
+{% block pageHeader %}Orders
+	<small>-- {{ paginator.count }} objects found | Page {{ page_obj.number }} of {{ paginator.num_pages }}</small>
+{% endblock %}
+
+{% block content %}
+	<form action="" method="post" class="form" role="form">
+		{% csrf_token %}
+		<div class="row">
+			<div class="col-md-3">{% bootstrap_field form.production_date_start %}</div>
+			<div class="col-md-3">{% bootstrap_field form.production_date_end %}</div>
+			<div class="col-md-3">{% bootstrap_field form.customers show_help=False %}</div>
+			<div class="col-md-3">{% bootstrap_button "Apply" button_type='submit' icon='filter' %}</div>
+		</div>
+	</form>
+
+	<hr/>
+
+	<!-- Paginator -->
+	{% include '_paginator.html' %}
+
+	<form method="post" action="" role="form">
+		{% csrf_token %}
+		{{ formset.management_form }}
+		{% buttons %}
+			{% bootstrap_button "Save" button_type='submit' icon='floppy-disk' button_class='btn-primary' %}
+		{% endbuttons %}
+		<table class="table table-striped table-bordered">
+			<thead>
+			<tr>
+				<th>Invoice</th>
+				<th>PO Number</th>
+				<th>Promised Date</th>
+				<th>Order Date</th>
+				<th>Production Date</th>
+				<th>Total</th>
+				<th>Customer</th>
+				<th>Referral</th>
+				<th>Status</th>
+			</tr>
+			</thead>
+			<tbody>
+			{% for object, form in zipped_list %}
+				<tr>
+					<td>{{ object.invoice_number }}</td>
+					<td>{{ object.po_number }}</td>
+					<td>{{ object.promised_date }}</td>
+					<td>{{ object.order_date }}</td>
+					<td>
+						{% bootstrap_field form.id %}
+						{% bootstrap_field form.production_date show_label=False %}
+						{# object.production_date #}
+					</td>
+					<td>--</td>
+					<td>{{ object.customer }}</td>
+					<td>{{ object.referral }}</td>
+					<td>{{ object.status }}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	</form>
+
+	<!-- Paginator -->
+	{% include '_paginator.html' %}
+{% endblock %}

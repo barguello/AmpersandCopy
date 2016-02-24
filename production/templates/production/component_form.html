@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% load bootstrap3 %}
+
+{% block content %}
+	<form method="post" action="" role="form" class="form-horizontal">
+		{% csrf_token %}
+		{% bootstrap_form form layout='horizontal' %}
+
+		{% block form_append %}{% endblock %}
+
+		{% buttons layout='horizontal' %}
+			<button type="submit" {% block submit_btn_attrs %}{% endblock %} class="btn btn-primary">{% bootstrap_icon 'floppy-disk' %} Save</button>
+			{% url 'retail_size_list' as cancel_url %}
+			{% block cancel_button %}
+				{% bootstrap_button "Cancel" href=cancel_url button_class='btn-default' icon='ban-circle' %}
+			{% endblock %}
+
+		{% endbuttons %}
+	</form>
+{% endblock %}

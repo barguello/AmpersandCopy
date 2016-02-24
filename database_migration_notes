@@ -1,0 +1,10 @@
+Since we are continually updating the schema, I think it might be best if we
+use the following procedure until we have a full schema with very little changes.
+
+In order to get the model from a mysql diagram do the following:
+1. make sure you have the desired diagram
+2. delete the ampersand database and create a fresh one
+3. sync the diagram with the database
+4. run production.utils.populate_core_database.py from the django shell
+   *In order to do this, just do the following:
+   import production.utils

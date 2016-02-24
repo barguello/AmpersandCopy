@@ -1,0 +1,605 @@
+from production.models import RetailSize, RetailCuttingPatternOutput, RetailCuttingPattern, RetailCuttingSheet, RetailCuttingSheetEntry, RetailCuttingSheetInstruction, Coating, PanelDepth, RetailCutWip, CoatingSize
+from production.utils.get import recipe_component
+from production.utils import display
+import math
+import datetime
+from production.utils import conversions
+import copy
+
+#Displays
+#-------------------------------------------------------------------------
+class CuttingPatternsDisplay:
+    def __init__(self, outputs, cutting_pattern_id, grade, tercero, coatingSize, cuttingPatternInstructions, quantityTercerosRequired):
+        self.outputs = outputs
+        self.cutting_pattern_id = cutting_pattern_id
+        self.grade = grade
+        self.tercero = tercero
+        self.coatingSize = coatingSize
+        self.cuttingPatternInstructions = cuttingPatternInstructions
+        self.quantityTercerosRequired = quantityTercerosRequired
+
+class OutputDisplay:
+    def __init__(self, retailSize, retailSizeId, quantity, isCradled, isPrimary):
+        self.retailSize = retailSize
+        self.retailSizeId = retailSizeId
+        self.quantity = quantity
+        self.isCradled = isCradled
+        self.isPrimary = isPrimary
+
+class RetailCuttingSheetDisplay:
+    def __init__(self, sheetId, entries):
+        self.sheetId = sheetId
+        self.entries = entries
+
+class RetailCuttingSheetEntryDisplay:
+    def __init__(self, entry_id, instruction, output, quantity, coating, coating_id,\
+            panel_depth, panel_depth_id, is_cradled):
+        self.entry_id = entry_id
+        self.instruction = instruction
+        self.output = output
+        self.quantity = quantity
+        self.coating = coating
+        self.coating_id = coating_id
+        self.panel_depth = panel_depth
+        self.panel_depth_id = panel_depth_id
+        self.is_cradled = is_cradled
+
+class RetailCuttingSheetSummaryDisplay:
+    def __init__(self, requiredTerceros, outputTotals):
+        self.requiredTerceros = requiredTerceros
+        self.outputTotals = outputTotals
+
+class CuttingSheetTercroRequiredDisplay:
+    def __init__(self, tercero, grade, quantity):
+        self.tercero = tercero
+        self.grade = grade
+        self.quantity = quantity
+
+class CuttingSheetOutputQuantityDisplay:
+    def __init__(self, retailSizeId, retailSize, isCradled, coatingId, quantity):
+        self.retailSizeId = retailSizeId
+        self.retailSize = retailSize
+        self.isCradled = isCradled
+        self.coatingId = coatingId
+        self.quantity = quantity
+
+class RetailCuttingSheetFinalInstructionDisplay:
+    def __init__(self, coating, panel, tercero, output, instructions, entryId, terceroQuantity, patternId):
+        self.coating = coating
+        self.panel = panel
+        self.tercero = tercero
+        self.output = output
+        self.instructions = instructions
+        self.entryId = entryId
+        self.terceroQuantity = terceroQuantity
+        self.patternId = patternId
+
+#-----------------------------------------------------------------------------
+
+
+#slaves
+#----------------------------------------------------------------------------
+def new_sheet(coating_id, panel_depth_id):
+    '''
+    Creates a new cutting sheet and returns id
+
+    Description
+    -----------
+    creates a new retail cutting sheet and returns the id
+    '''
+
+    current_datetime = datetime.datetime.now()
+    new_sheet = RetailCuttingSheet(created = current_datetime, coating_id = coating_id, \
+            panel_depth_id = panel_depth_id)
+    new_sheet.save()
+    return new_sheet.id
+
+def retrieve_entries(coating_id, panel_depth_id):
+    ''' Returns the entries from the latest cutting sheet'''
+    latestSheet = RetailCuttingSheet.objects.filter(coating_id = coating_id,\
+            panel_depth_id = panel_depth_id)
+    if (not latestSheet):
+        new_sheet(coating_id, panel_depth_id)
+
+    latestSheet = RetailCuttingSheet.objects.filter(coating_id = coating_id,\
+            panel_depth_id = panel_depth_id).order_by('-id')
+    if latestSheet:
+        latestSheet = latestSheet[0]
+    else:
+        latestSheet = RetailCuttingSheet.objects.order_by('-id')[0]
+    entries = RetailCuttingSheetEntry.objects.filter(retail_cutting_sheet__id  = latestSheet.id)
+    return (entries, latestSheet.id)
+
+def get_tercero_count(coating_id, panel_depth_id):
+    entries, sheet_id = retrieve_entries(coating_id, panel_depth_id)
+    tercero_list = []
+    tercero_dict = {}
+    for entry in entries:
+        instructions = RetailCuttingSheetInstruction.objects.filter(retail_cutting_sheet_entry_id = entry.id)
+        for instruction in instructions:
+            grade = instruction.retail_cutting_pattern.grade
+            tercero = instruction.retail_cutting_pattern.coating_size_id
+            if tercero not in tercero_dict:
+                tercero_dict[tercero] = {}
+            tercero_dict[tercero][grade] = instruction.quantity if grade not in tercero_dict[tercero] else \
+                    tercero_dict[tercero][grade] + instruction.quantity
+
+    for tercero in tercero_dict.iterkeys():
+        for grade, quantity in tercero_dict[tercero].iteritems():
+            tercero_object = CoatingSize.objects.get(id = tercero)
+            tercero_list.append(CuttingSheetTercroRequiredDisplay(display.tercero_size(tercero_object), grade, quantity))
+
+    return tercero_list
+
+def get_output_count(coating_id, panel_depth_id):
+    entries, sheet_id = retrieve_entries(coating_id, panel_depth_id)
+    output_list = []
+    output_dict = {}
+    for entry in entries:
+        coating = entry.retail_cutting_sheet.coating_id
+        panel_depth = entry.retail_cutting_sheet.panel_depth_id
+        is_cradled = entry.is_cradled
+        if coating not in output_dict:
+            output_dict[coating] = {}
+        if panel_depth not in output_dict[coating]:
+            output_dict[coating][panel_depth] = {}
+        if is_cradled not in output_dict[coating][panel_depth]:
+            output_dict[coating][panel_depth][is_cradled] = {}
+
+        instructions = RetailCuttingSheetInstruction.objects.filter(retail_cutting_sheet_entry_id = entry.id)
+
+        for instruction in instructions:
+            quantity_to_cut = instruction.quantity
+            outputs = RetailCuttingPatternOutput.objects.filter(retail_cutting_pattern_id = instruction.retail_cutting_pattern_id)
+            for output in outputs:
+                retail_size = RetailSize.objects.get(id = output.retail_size_id)
+                output_dict[coating][panel_depth][is_cradled][output.retail_size_id] = \
+                        quantity_to_cut*output.quantity if output.retail_size_id not in\
+                        output_dict[coating][panel_depth][is_cradled] else \
+                        output_dict[coating][panel_depth][is_cradled][output.retail_size_id] + quantity_to_cut*output.quantity
+    for coating in output_dict.iterkeys():
+        for panel_depth in output_dict[coating].iterkeys():
+            for is_cradled in output_dict[coating][panel_depth].iterkeys():
+                for retail_size, quantity in output_dict[coating][panel_depth][is_cradled].iteritems():
+                    retail_size_display = display.retail_size(RetailSize.objects.get(id = retail_size))
+                    output_list.append(CuttingSheetOutputQuantityDisplay(retail_size, \
+                            retail_size_display, 'c' if is_cradled else 'f', coating_id, quantity))
+    output_list = sort_outputs(output_list)
+    return output_list
+
+def sort_outputs(output_list):
+    cradled_data = [(output.retailSizeId, output) for output in output_list if \
+            output.isCradled == 'c']
+    flat_data = [(output.retailSizeId, output) for output in output_list if \
+            output.isCradled == 'f']
+    cradled_output_dict = {data[0]:data[1] for data in cradled_data}
+    flat_output_dict = {data[0]:data[1] for data in flat_data}
+    sorted_cradled_retail_sizes = RetailSize.objects.order_by('width', 'length').\
+            filter(id__in = [data[0] for data in cradled_data])
+    sorted_flat_retail_sizes = RetailSize.objects.order_by('width', 'length').\
+            filter(id__in = [data[0] for data in flat_data])
+    sorted_cradled_output_list = [cradled_output_dict[retail_size.id] for \
+            retail_size in sorted_cradled_retail_sizes]
+    sorted_flat_output_list = [flat_output_dict[retail_size.id] for \
+            retail_size in sorted_flat_retail_sizes]
+    return sorted_cradled_output_list + sorted_flat_output_list
+
+def format_cutting_pattern(instruction, tercero):
+    instructionIndent = ''
+    firstI = instruction.index('I')
+    for i in range(0,firstI + 3):
+        instructionIndent = instructionIndent + '&nbsp;'
+    instruction.replace('___', '<br />' + instructionIndent)
+    instruction.replace(' ', '&nbsp;')
+    return instruction
+
+def accumulate_cutting_sheet_data(entries):
+    sheet_data = {}
+    instructions = RetailCuttingSheetInstruction.objects.filter(retail_cutting_sheet_entry_id__in = \
+            entries, retail_cutting_pattern__is_active = True).order_by('retail_cutting_pattern__cutting_instructions')
+    for instruction in instructions:
+        cutting_pattern = RetailCuttingPattern.objects.get(id = \
+                instruction.retail_cutting_pattern_id)
+        coating_size_id = instruction.retail_cutting_pattern.coating_size.id
+        instruction_string = instruction.retail_cutting_pattern.cutting_instructions
+        if instruction_string in sheet_data:
+            if coating_size_id in sheet_data[instruction_string]:
+                if cutting_pattern.grade in sheet_data[instruction_string][coating_size_id]:
+                    sheet_data[instruction_string][coating_size_id][cutting_pattern.\
+                            grade] += instruction.quantity
+                else:
+                    sheet_data[instruction_string][coating_size_id][cutting_pattern.\
+                            grade] = instruction.quantity
+            else:
+                sheet_data[instruction_string][coating_size_id] = \
+                        {'pattern_id': instruction.retail_cutting_pattern.id, \
+                        cutting_pattern.grade: instruction.quantity}
+        else:
+            sheet_data[instruction_string] = \
+                    {coating_size_id:{'pattern_id': instruction.retail_cutting_pattern.id, \
+                    cutting_pattern.grade:instruction.quantity}}
+    return sheet_data
+
+def create_cutting_sheet_output(sheet_data, coating_id, panel_depth_id):
+    output_list = []
+    for instruction, instruction_data in sheet_data.iteritems():
+        for coating_size_id, data in instruction_data.iteritems():
+            outputs = RetailCuttingPatternOutput.objects.filter(retail_cutting_pattern_id = \
+                    data['pattern_id'])
+            cutting_pattern = RetailCuttingPattern.objects.get(id = data['pattern_id'])
+
+            outputString = ''
+            for output in outputs:
+                retail_size_display = display.retail_size(RetailSize.objects.get(id = output.retail_size_id))
+                outputString = outputString + retail_size_display + \
+                        (' cradled' if output.is_for_cradle else ' flat') + ' (' + str(output.quantity) + '), '
+
+            instructionIndent = ''
+            firstI = cutting_pattern.cutting_instructions.index('I')
+            for i in range(0, firstI + 8):
+                instructionIndent = instructionIndent + '&nbsp;'
+            tercero = CoatingSize.objects.get(id = cutting_pattern.coating_size_id)
+            terceroDisplay = ''
+            total_tercero_quantity = 0
+            for grade, quantity in data.iteritems():
+                if grade is not 'pattern_id':
+                    terceroDisplay = terceroDisplay +  grade + \
+                            ' (' + str(quantity) + '), '
+                    total_tercero_quantity = total_tercero_quantity + quantity
+            terceroDisplay = display.tercero_size(tercero) + ' (' + str(total_tercero_quantity) + '), Grades: ' + terceroDisplay
+            if (len(terceroDisplay) > 2):
+                terceroDisplay = terceroDisplay[:(len(terceroDisplay)-2)]
+            coating_description = Coating.objects.filter(id = coating_id)[0].description
+            panel_depth = PanelDepth.objects.get(id = panel_depth_id)
+            output_list.append(RetailCuttingSheetFinalInstructionDisplay(coating_description, \
+                    display.small_measurement(panel_depth), terceroDisplay, outputString, \
+                    cutting_pattern.cutting_instructions.replace('___', '<br />' + instructionIndent), 0, 33, cutting_pattern.id))
+    return output_list
+
+def review_instructions(coating_id, panel_depth_id):
+    entries, sheet_id = retrieve_entries(coating_id, panel_depth_id)
+
+    instructions = RetailCuttingSheetInstruction.objects.filter(retail_cutting_sheet_entry_id__in = \
+                        entries).order_by('retail_cutting_pattern__cutting_instructions')
+    output_list = []
+    for instruction in instructions:
+        cutting_pattern = RetailCuttingPattern.objects.get(id = \
+                                instruction.retail_cutting_pattern_id)
+        coating_size_id = instruction.retail_cutting_pattern.coating_size.id
+        instruction_string = instruction.retail_cutting_pattern.cutting_instructions
+        quantity = instruction.quantity
+        cutting_pattern_id = instruction.retail_cutting_pattern_id
+        outputs = RetailCuttingPatternOutput.objects.filter(retail_cutting_pattern_id = \
+                            cutting_pattern_id)
+        cutting_pattern = RetailCuttingPattern.objects.get(id = cutting_pattern_id)
+        outputString = ''
+        for output in outputs:
+            retail_size_display = display.retail_size(RetailSize.objects.get(id = output.retail_size_id))
+            outputString = outputString + retail_size_display + \
+                (' cradled' if output.is_for_cradle else ' flat') + ' (' + str(output.quantity) + '), '
+
+        instructionIndent = ''
+        firstI = cutting_pattern.cutting_instructions.index('I')
+        for i in range(0, firstI + 8):
+            instructionIndent = instructionIndent + '&nbsp;'
+        tercero = CoatingSize.objects.get(id = coating_size_id)
+        terceroDisplay = ''
+        total_tercero_quantity = 0
+        terceroDisplay = ', ' + instruction.retail_cutting_pattern.grade + \
+                            ' (' + str(quantity) + '), '
+        terceroDisplay = display.tercero_size(tercero) + terceroDisplay
+        if (len(terceroDisplay) > 2):
+            terceroDisplay = terceroDisplay[:(len(terceroDisplay)-2)]
+        coating_description = Coating.objects.filter(id = coating_id)[0].description
+        panel_depth = PanelDepth.objects.get(id = panel_depth_id)
+        output_list.append(RetailCuttingSheetFinalInstructionDisplay(coating_description,\
+                display.small_measurement(panel_depth), terceroDisplay, outputString,\
+                cutting_pattern.cutting_instructions.replace('___', '<br />' + instructionIndent), \
+                instruction.id, quantity, cutting_pattern.id))
+    return output_list
+
+
+def get_final_instructions(coating_id, panel_depth_id):
+    entries, sheet_id = retrieve_entries(coating_id, panel_depth_id)
+
+    # accumulating the cutting patterns
+    sheet_data = accumulate_cutting_sheet_data(entries)
+
+    # creating displays for the accumulated cutting patterns
+    output_list = create_cutting_sheet_output(sheet_data, coating_id, panel_depth_id)
+
+    return output_list
+#---------------------------------------------------------------------------
+
+
+#Masters
+#---------------------------------------------------------------------------
+def cutting_patterns(primarySizeId, isForCradle, secondarySizeId, primarySizeQuantity):
+    '''
+    Description
+    -----------
+    Returns all cutting patterns that have the retail size specified by
+    retailSizeId in them.  isForCradle and desiredQuantity just go along for 
+    the ride so that they are persisted into WIP
+    '''
+
+    #get all desired cutting pattern outputs
+    cutting_pattern_outputs = RetailCuttingPatternOutput.objects.\
+            filter(retail_size_id = primarySizeId, is_primary = True,\
+            is_for_cradle = conversions.bool_map[isForCradle], retail_cutting_pattern__is_active = True)
+
+    patterns = []
+    for output in cutting_pattern_outputs:
+        quantity = output.quantity
+        #get the outputs for the current output's cutting pattern and create \
+        #display for family
+        output_family = RetailCuttingPatternOutput.objects.\
+                        filter(retail_cutting_pattern_id = \
+                        output.retail_cutting_pattern.id)
+
+        secondary_a_sibling = False
+        for sibling in output_family:
+            if secondarySizeId == '' or int(sibling.retail_size_id) == int(secondarySizeId):
+                secondary_a_sibling = True
+
+        if secondary_a_sibling:
+            output_displays = [OutputDisplay(display.retail_size(\
+                           sibling.retail_size), sibling.retail_size.id, sibling.quantity,\
+                           'c' if sibling.is_for_cradle else 'f', sibling.is_primary)
+                           for sibling in output_family]
+            patterns.append(CuttingPatternsDisplay\
+                    (output_displays, output.retail_cutting_pattern.id, output.retail_cutting_pattern.grade, \
+                    display.tercero_size(output.retail_cutting_pattern.coating_size), output.retail_cutting_pattern.coating_size, \
+                    format_cutting_pattern(output.retail_cutting_pattern.cutting_instructions, output.retail_cutting_pattern.coating_size),\
+                    'n/a' if not primarySizeQuantity else str(int(math.\
+                    ceil(float(primarySizeQuantity)/float(output.quantity)))) + ' needed'))
+    return patterns
+
+def add_to_sheet(cutting_sheet_id, coating_id, panel_depth_id, is_cradled, instructions):
+    '''
+    Saves a new entry into current cutting sheet table and returns all cutting sheet entries
+
+    Description
+    -----------
+    Adds the entries to the database and sends back all current entries for
+    cutting_sheet_id
+    '''
+
+    current_datetime = datetime.datetime.now()
+
+    new_entry = RetailCuttingSheetEntry(created = current_datetime,
+                                        is_cradled = is_cradled,
+                                        retail_cutting_sheet_id = cutting_sheet_id)
+    new_entry.save()
+    for instruction in instructions:
+        sheet_instruction = RetailCuttingSheetInstruction(retail_cutting_pattern_id = \
+                instruction.retail_cutting_pattern_id)
+        new_sheet_instruction = RetailCuttingSheetInstruction(output_string = instruction.output,
+        quantity = instruction.quantity,
+        retail_cutting_sheet_entry_id = new_entry.id,
+        retail_cutting_pattern_id = instruction.retail_cutting_pattern_id,)
+        new_sheet_instruction.save()
+
+    return
+
+def save_sheet():
+    '''
+    Saves cutting sheets into wip
+
+    Description
+    -----------
+    Saves the most recently-saved retail cutting sheet into retail cut WIP
+    To be used in the Cutting Patterns page once a cutting sheet has been
+    finalized
+    '''
+
+    sheet = cutting_sheet()
+    sheet_id = sheet.sheetId
+    entries = sheet.entries
+    wip = []
+    for entry in entries:
+        coating_id = entry.coating_id
+        is_cradled = entry.is_cradled
+        panel_depth_id = entry.panel_depth_id
+        current_date_time = datetime.datetime.now()
+        wip_type = 'daily'
+        instructions = RetailCuttingSheetInstruction.objects.filter(retail_cutting_sheet_entry_id = entry.entry_id)
+        for instruction in instructions:
+            quantity = instruction.quantity
+            retail_cutting_pattern = RetailCuttingPattern.objects.filter(retailcuttingsheetinstruction = instruction.id)
+            outputs = RetailCuttingPatternOutput.objects.filter(retail_cutting_pattern = retail_cutting_pattern)
+            for output in outputs:
+                total_quantity = quantity*output.quantity
+                retail_size = RetailSize.objects.get(pk = output.retail_size_id)
+                new_wip_entry = RetailCutWip(date_time = current_date_time, quantity = \
+                        total_quantity, is_cradled = is_cradled, coating_id = coating_id, \
+                        retail_size_id = retail_size.id, panel_depth_id = panel_depth_id, \
+                        type = wip_type, retail_cutting_sheet_id = sheet_id)
+                new_wip_entry.save()
+
+def cutting_sheet(coating_id, panel_depth_id):
+    '''
+    Returns latest cutting sheet
+
+    Description
+    -----------
+    Returns the latest cutting sheet along with all of its information.
+    If none exists, a new cutting sheet is created
+    '''
+
+    entries, latestSheet_id = retrieve_entries(coating_id, panel_depth_id)
+    entry_list = get_final_instructions(coating_id, panel_depth_id)
+    return RetailCuttingSheetDisplay(latestSheet_id, entry_list)
+
+def net_retail_panels_needed(retail_size, quantity, sheet_summary, coating_id, cradle_type):
+    lettered_cradle_type = 'c' if cradle_type else 'f'
+    retail_cuts = {}
+    for item in sheet_summary.outputTotals:
+        new_retail_size = int(item.retailSizeId)
+        new_coating = int(item.coatingId)
+        new_cradle_type = item.isCradled
+        new_quant = item.quantity
+        if new_retail_size not in retail_cuts:
+            retail_cuts[new_retail_size] = {}
+        if new_coating not in retail_cuts[new_retail_size]:
+            retail_cuts[new_retail_size][new_coating] = {}
+        if new_cradle_type not in retail_cuts[new_retail_size][new_coating]:
+            retail_cuts[new_retail_size][new_coating][new_cradle_type] = new_quant
+        else:
+            retail_cuts[new_retail_size][new_coating][new_cradle_type] += quant
+
+    already_cut = 0 if int(retail_size) not in retail_cuts or int(coating_id) not in retail_cuts[int(retail_size)] or\
+            lettered_cradle_type not in retail_cuts[int(retail_size)][int(coating_id)] else retail_cuts[int(retail_size)][int(coating_id)][lettered_cradle_type]
+
+    net_needed = int(quantity)-already_cut
+    return str(max(0, net_needed))
+
+def get_current_sheet_summary(coating_id, panel_depth_id):
+    '''
+    Description
+    -----------
+    Returns an object containing the summary info of the required terceros
+    and cumulative outputs of the most recent sheet
+    '''
+    terceros = get_tercero_count(coating_id, panel_depth_id)
+    outputs = get_output_count(coating_id, panel_depth_id)
+
+    return RetailCuttingSheetSummaryDisplay(terceros, outputs)
+
+def final_cutting_sheet_instructions(coating_id, panel_depth_id):
+    return get_final_instructions(coating_id, panel_depth_id)
+
+def UpdateCuttingSheetEntries(updates):
+    for update in updates:
+        entry = RetailCuttingSheetInstruction.objects.get(id = update.retail_cutting_pattern_id)
+        entry.quantity = update.quantity
+        if float(update.quantity) > 0.1:
+            entry.save()
+        else:
+            entry.delete()
+    return
+
+def CopyCuttingPattern(existing_pattern_instruction):
+    cutting_pattern = RetailCuttingPattern.objects.filter(cutting_instructions = existing_pattern_instruction)[0]
+    outputs = RetailCuttingPatternOutput.objects.filter(retail_cutting_pattern_id = cutting_pattern.id)
+    new_cutting_pattern = RetailCuttingPattern(cutting_instructions = "changeme_" + existing_pattern_instruction, \
+            grade = cutting_pattern.grade, coating_size = cutting_pattern.coating_size, is_active = True)
+    new_cutting_pattern.save()
+    for output in outputs:
+        new_output = RetailCuttingPatternOutput(quantity = output.quantity,\
+                retail_cutting_pattern_id = new_cutting_pattern.id,\
+                retail_size_id = output.retail_size_id,
+                is_primary = output.is_primary,
+                is_for_cradle = output.is_for_cradle)
+        new_output.save()
+    return new_cutting_pattern.id
+
+def DeactivateCuttingPattern(existing_cutting_instructions):
+    cutting_patterns = RetailCuttingPattern.objects.filter(cutting_instructions = existing_cutting_instructions)
+    for cutting_pattern in cutting_patterns:
+        cutting_pattern.is_active = False
+        cutting_pattern.save()
+    return
+
+def UpdateCuttingPattern(existing_cutting_instructions, tercero_size_id, list_of_grades, list_of_outputs, cutting_instructions):
+    cutting_patterns = RetailCuttingPattern.objects.filter(cutting_instructions = existing_cutting_instructions)
+    list_of_outputs_for_remaining_grades = copy.deepcopy(list_of_outputs)
+    # Don't do anything if the cutting pattern does not exist
+    if not cutting_patterns:
+        return
+
+    # Update the cutting patterns
+    for pattern in cutting_patterns:
+        list_of_outputs_copy = copy.deepcopy(list_of_outputs)
+        outputs = RetailCuttingPatternOutput.objects.filter(retail_cutting_pattern_id = pattern.id)
+        pattern.coating_size_id = tercero_size_id
+        pattern.cutting_instructions = cutting_instructions
+        try:
+            pattern.grade = list_of_grades.pop()
+            pattern.save()
+        # In case there are less grades than before
+        except:
+            pattern.delete()
+            for output in outputs:
+                output.delete()
+            continue
+        # Update the outputs
+        for old_output in outputs:
+            try:
+                new_output = list_of_outputs_copy.pop()
+                old_output.quantity = new_output[0]
+                old_output.retail_size_id = new_output[1]
+                old_output.retail_cutting_pattern_id = pattern.id
+                old_output.is_primary = new_output[2]
+                old_output.is_for_cradle = new_output[3]
+                old_output.save()
+            # In case there are less outputs than before
+            except:
+                old_output.delete()
+        # In case there are more outputs than before
+        for new_output in list_of_outputs_copy:
+            output = RetailCuttingPatternOutput(quantity = new_output[0],\
+                        retail_size_id = new_output[1],\
+                        retail_cutting_pattern_id = pattern.id,\
+                        is_primary = new_output[2],\
+                        is_for_cradle = new_output[3])
+            output.save()
+    # In case there are more grades than before
+    for grade in list_of_grades:
+        new_pattern = RetailCuttingPattern(coating_size_id = tercero_size_id,\
+                cutting_instructions = cutting_instructions, grade = grade, is_active = True)
+        new_pattern.save()
+        for output in list_of_outputs_for_remaining_grades:
+            new_output = RetailCuttingPatternOutput(quantity = output[0], retail_size_id = output[1],\
+                    retail_cutting_pattern_id = new_pattern.id, is_primary = output[2],\
+                    is_for_cradle = output[3])
+            new_output.save()
+    return
+
+def ReadById(existing_pattern_id):
+    cutting_pattern = RetailCuttingPattern.objects.get(pk = existing_pattern_id)
+    outputs = RetailCuttingPatternOutput.objects.filter(retail_cutting_pattern_id = existing_pattern_id)
+    primary_output = []
+    secondary_outputs = []
+    for output in outputs:
+        retail_size = RetailSize.objects.get(pk = output.retail_size_id)
+        if output.is_primary:
+            primary_output.append(OutputDisplay(retail_size, output.retail_size_id, output.quantity, output.is_for_cradle, True))
+        else:
+            secondary_outputs.append(OutputDisplay(retail_size, output.retail_size_id, output.quantity, output.is_for_cradle, False))
+    output_displays = primary_output + secondary_outputs
+    pattern_display = CuttingPatternsDisplay(output_displays, existing_pattern_id, cutting_pattern.grade,\
+            display.tercero_size(cutting_pattern.coating_size), cutting_pattern.coating_size, cutting_pattern.cutting_instructions, 'n/a')
+    return pattern_display
+
+def ReadByInstruction(existing_cutting_instruction):
+    cutting_patterns = RetailCuttingPattern.objects.filter(cutting_instructions = existing_cutting_instruction)
+    grades = [cutting_pattern.grade for cutting_pattern in cutting_patterns]
+    outputs = RetailCuttingPatternOutput.objects.filter(retail_cutting_pattern_id = cutting_patterns[0].id)
+    primary_output = []
+    secondary_outputs = []
+    for output in outputs:
+        retail_size = RetailSize.objects.get(pk = output.retail_size_id)
+        if output.is_primary:
+            primary_output.append(OutputDisplay(retail_size, output.retail_size_id, output.quantity, output.is_for_cradle, True))
+        else:
+            secondary_outputs.append(OutputDisplay(retail_size, output.retail_size_id, output.quantity, output.is_for_cradle, False))
+    output_displays = primary_output + secondary_outputs
+    pattern_display = CuttingPatternsDisplay(output_displays, cutting_patterns[0].id, grades,\
+            display.tercero_size(cutting_pattern.coating_size), cutting_pattern.coating_size, cutting_pattern.cutting_instructions, 'n/a')
+    return pattern_display
+
+def CreateCuttingPattern(tercero_size_id, panel_depth_id, list_of_grades, list_of_outputs, cutting_instruction):
+    for grade in list_of_grades:
+        cutting_pattern = RetailCuttingPattern(cutting_instructions = cutting_instruction, grade = grade,\
+                coating_size_id = tercero_size_id, is_active = True)
+        cutting_pattern.save()
+        for output in list_of_outputs:
+            new_output = RetailCuttingPatternOutput(quantity = output[0], retail_size_id = output[1],
+                    retail_cutting_pattern_id = cutting_pattern.id, is_primary = output[2], is_for_cradle = output[3])
+            new_output.save()
+    return cutting_pattern.id
+#-------------------------------------------------------------------------------
+
+def print_stuff(stuff):
+    return

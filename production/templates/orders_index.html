@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block pageHeader %}Upload Orders{% endblock %}
+
+{% block content %}
+<form name="FileToImportForm" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" name="submitFile" value="Upload and Import" />
+
+</form>
+Upload Status:
+
+
+{% endblock %}

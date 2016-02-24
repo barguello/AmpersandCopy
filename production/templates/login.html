@@ -1,0 +1,21 @@
+{% extends "base_login.html" %}
+
+{% block pageHeader %}Login{% endblock %}
+M
+
+{% block content %}
+
+<form name="LoginForm" method="POST">
+<div style="display:-webkit-box;">
+    <div style="width:40%;">
+        Please enter your username and password
+        {% csrf_token %}
+        {{ form.as_p }}
+        {{ status }}<br />
+        <input type="submit" name="submitLogin" class="btn btn-primary" value="Login" /><br /><br /><br /><br /><br />
+        <div>current user: {{ currUser }} </div><br />
+        <input type="submit" name="submitLogout" class="btn btn-primary" value="Logout" />
+    </div>
+</div>
+</form>
+{% endblock %}

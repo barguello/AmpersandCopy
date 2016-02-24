@@ -1,0 +1,8 @@
+{% extends 'production/component_form.html' %}
+
+{% block pageHeader %}Edit Cradle Width{% endblock %}
+
+{% block cancel_button %}
+	{% url 'cradle_width_list' as cancel_url %}
+	{{ block.super }}
+{% endblock %}

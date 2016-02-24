@@ -1,0 +1,88 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="{{ STATIC_URL }}bootstrap_dashboard/bootstrap.min.css" />
+        <link rel="stylesheet" href="{{ STATIC_URL }}bootstrap_dashboard/dashboard.css" />
+        <script src="{{ STATIC_URL }}bootstrap_dashboard/jquery.min.js"></script>
+        <script src="{{ STATIC_URL }}bootstrap_dashboard/bootstrap.min.js"></script>
+        <style type="text/css" media="print">
+            @page 
+            {
+                size: auto;   /* auto is the initial value */
+                margin: 0mm;  /* this affects the margin in the printer settings */
+            }
+
+            body 
+            {
+                background-color:#FFFFFF; 
+                border: solid 1px black ;
+                margin: 0px;  /* this affects the margin on the content before sending to printer */
+           }
+        </style>
+    </head>
+    <body style="padding-top:0px;">
+        <div class="no-print">
+            <input type="button" class="btn" value="Print" onClick="window.print()">
+            <button class="btn" data-toggle="collapse" data-target="#review">Review/Edit</button>
+        </div>
+        <form class="no-print collapse" id="review" method="POST">
+            {% csrf_token %}
+            <div style="display:block;padding-top:0.25in;padding-bottom:0.25in; padding-left:0.25in; padding-right:0.25in">
+                <div style="float:left;font-size:22px;font-weight:bold;">{{ finalSheetCoating }} ({{ finalSheetPanelDepth }}) - {% now "n/j/y" %}</div>
+                <div style="float:right;">Oficina: ____  Cradled: ___  P: ___  T: ___</div>
+                <div style="display:block" class="clearfix"></div>
+                {% for instruction in sheetForReview %}
+                    <br /><b style="font-size:16px;">Tercero: {{instruction.tercero }}
+                    <br />&nbsp;&nbsp;Output Per Panel: {{ instruction.output }}
+                    Quantity: <input type="number" style="width:50px;" type="number" step="1" min="0" 
+                        name="quantityInputFor_{{ instruction.entryId }}" value='{{ instruction.terceroQuantity }}' />
+                        <input type="hidden" name="originalQuantityFor_{{ instruction.entryId }}" value='{{ instruction.terceroQuantity}}' />
+                    <input type="submit" class="btn btn-primary" name="submitReviewSelection" value="Update" />
+                    <a class="glyphicon glyphicon-pencil" href="/production/cuttingpatterns/retailcutedit?id={{instruction.patternId}}"></a>
+
+
+                    <br /><pre style="margin-top:0px;margin-bottom:0px;padding:0px;font-size:18px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ instruction.instructions|safe }}</pre></b>
+                {% endfor %}
+            </div>
+        </form>
+        <div style="display:block;padding-top:0.25in;padding-bottom:0.25in; padding-left:0.25in; padding-right:0.25in">
+            <div style="float:left;font-size:22px;font-weight:bold;">{{ finalSheetCoating }} ({{ finalSheetPanelDepth }}) - {% now "n/j/y" %}</div>
+            <div style="float:right;">Oficina: ____  Cradled: ___  P: ___  T: ___</div>
+            <div style="display:block" class="clearfix"></div>
+            {% for instruction in finalSheet %}
+                <br /><b style="font-size:16px;">Tercero: {{ instruction.tercero }}
+                <br />&nbsp;&nbsp;Output Per Panel: {{ instruction.output }}
+                <br /><pre style="margin-top:0px;margin-bottom:0px;padding:0px;font-size:18px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ instruction.instructions|safe }}</pre></b>
+            {% endfor %}
+            {% if currentSheetSummary %}
+                <div style="display:block;" class="clearfix">
+                    <div style="float:left;width:49%;">
+                        <h3>Retail Outputs</h3>
+                        <table class="table table-condensed">
+                            <tr><th>Size</th><th>Cuadro/Flat</th><th>Quantity</th></tr>
+                            {% for outputTotal in currentSheetSummary.outputTotals %}
+                                <tr><td>{{ outputTotal.retailSize }} </td><td>{{ outputTotal.isCradled }}</td><td>{{ outputTotal.quantity }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    <div style="float:right;width:49%;">
+                        <h3>Terceros Required</h3>
+                        <table class="table table-condensed">
+                            <tr><th>Tercero</th><th>Grade</th><th>Quantity</th></tr>
+                            {% for requiredTercero in currentSheetSummary.requiredTerceros %}
+                                <tr><td>{{ requiredTercero.tercero }}</td><td>{{ requiredTercero.grade }}</td><td>{{ requiredTercero.quantity }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+            {% endif %}
+        </div>
+
+        <div style="display:none;">
+            Vars:<br />
+            testvar: {{ testvar }}<br />
+            testvarb: {{ testvarb }}<br />
+            testvarc: {{ testvarc }}<br />
+            status: {{ status }}
+        </div>
+        <a class="pull-right btn btn-primary" href="/production/cuttingpatterns/retailcuts", style="float:left;">Back</a>
+    </body>
+</html>

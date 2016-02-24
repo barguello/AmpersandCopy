@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block pageHeader %}
+	{% block component_header %}{% endblock %}
+	<small>-- {{ paginator.count }} objects found | Page {{ page_obj.number }} of {{ paginator.num_pages }}</small>
+{% endblock %}
+
+{% block content %}
+	<ul class="nav nav-tabs" role="tablist">
+		{% url 'retail_size_list' as retail_size_url %}
+		<li role="presentation" {% if request.path == retail_size_url or retail_size_url|add:'retail/' == request.path %}class="active"{% endif %}><a href="{{ retail_size_url }}">Retail Sizes</a></li>
+		{% url 'coating_list' as coating_url %}
+		<li role="presentation" {% if request.path == coating_url %}class="active"{% endif %}><a href="{{ coating_url }}">Coatings</a></li>
+		{% url 'panel_depth_list' as panel_depth_url %}
+		<li role="presentation" {% if request.path == panel_depth_url %}class="active"{% endif %}><a href="{{ panel_depth_url }}">Panel Depths</a></li>
+		{% url 'cradle_depth_list' as cradle_depth_url %}
+		<li role="presentation" {% if request.path == cradle_depth_url %}class="active"{% endif %}><a href="{{ cradle_depth_url }}">Cradle Depths</a></li>
+		{% url 'cradle_width_list' as cradle_width_url %}
+		<li role="presentation" {% if request.path == cradle_width_url %}class="active"{% endif %}><a href="{{ cradle_width_url }}">Cradle Widths</a></li>
+		{% url 'spray_color_list' as spray_color_url %}
+		<li role="presentation" {% if request.path == spray_color_url %}class="active"{% endif %}><a href="{{ spray_color_url }}">Sprays</a></li>
+	</ul>
+
+	<div class="tab-content">
+		<div role="tabpanel" class="tab-pane active">
+
+			<!-- Paginator -->
+			{% include '_paginator.html' %}
+
+			{% block component_content %}{% endblock %}
+
+			<!-- Paginator -->
+			{% include '_paginator.html' %}
+		</div>
+	</div>
+
+{% endblock %}

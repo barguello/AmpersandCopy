@@ -1,0 +1,8 @@
+{% extends 'production/component_form.html' %}
+
+{% block pageHeader %}Edit Recipe{% endblock %}
+
+{% block cancel_button %}
+	{% url 'recipe_list' as cancel_url %}
+	{{ block.super }}
+{% endblock %}

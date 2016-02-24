@@ -1,0 +1,12 @@
+	<nav>
+		<ul class="pager">
+			<li class="previous {{ page_obj.has_previous|yesno:',disabled' }}">
+				<a href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% else %}#{% endif %}"><span
+						aria-hidden="true">&larr;</span> Prev</a>
+			</li>
+			<li class="next {{ page_obj.has_next|yesno:',disabled' }}">
+				<a href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% else %}#{% endif %}">Next <span
+						aria-hidden="true">&rarr;</span></a>
+			</li>
+		</ul>
+	</nav>

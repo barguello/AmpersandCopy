@@ -1,0 +1,32 @@
+{% load bootstrap3 %}
+
+<div class="sort-item">
+	{% bootstrap_field form.DELETE %}
+	<div class="form-group">
+		{% for hidden in form.hidden_fields %}
+			{{ hidden }}
+		{% endfor %}
+		{% bootstrap_label form.item_recipe.label label_class="col-md-3 control-label" label_for=form.item_recipe.id_for_label %}
+		<div class="col-md-5">
+			<div class="input-group">
+				<p class="form-control-static recipe-text" title="{{ form.item_recipe.field.widget.recipe_text }}">{{ form.item_recipe.field.widget.recipe_text|truncatechars:55|default:"[Select a Recipe]" }}</p>
+				<div class="input-group-btn">
+					<button type="button" class="btn btn-warning dropdown-toggle"
+							data-source="#{{ form.item_recipe.id_for_label }}" data-toggle="modal"
+							data-target="#modal-recipes-chooser">
+						{% bootstrap_icon 'search' %}
+					</button>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-2">
+			{% bootstrap_field form.pack_quantity show_label=False form_group_class='' %}
+		</div>
+		<div class="col-md-2">
+			{% if can_delete %}
+				{% bootstrap_button "" button_type='button' button_class='btn-danger btn-sm delete-form' icon='trash' %}
+			{% endif %}
+			{% bootstrap_button "" button_type='button' button_class='btn-primary btn-sm add-form' icon='plus' %}
+		</div>
+	</div>
+</div>

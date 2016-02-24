@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block pageHeader %}Create Cutting Sheet{% endblock %}
+
+{% block scriptcontent %}
+	<script type="text/javascript">
+		jQuery(function ($) {
+			// Display popovers
+			$('[data-toggle="popover"]').popover()
+		})
+	</script>
+{% endblock %}
+
+{% block content %}
+
+<form name="CuttingPatternForm" method="POST">
+<div style="display:-webkit-box;">
+    <div style="width:40%;">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" name="submitQueryForm" class="btn btn-primary" value="Search" />
+        <h3>Cutting Patterns</h3>
+        {% if cuttingPatterns %}
+            {% for cuttingPattern in cuttingPatterns %}
+                <div style="display:block;width:100%;">
+                    Tercero: {{cuttingPattern.tercero}}, Grade: {{cuttingPattern.grade}},
+                    Utilize: <input style="width:50px;" type="number" step="1" min="1" name="quantityInputFor_{{cuttingPattern.cutting_pattern_id}}" />
+                    ({{cuttingPattern.quantityTercerosRequired}})
+									<a class="glyphicon glyphicon-pencil"
+											data-trigger="hover" data-toggle="popover" data-container="body" data-placement="top"
+											data-html="true"
+											data-content="<span class='pre'>{{ cuttingPattern.cuttingPatternInstructions }}</span>"
+											href="/production/cuttingpatterns/retailcutedit?id={{ cuttingPattern.cutting_pattern_id }}"></a>
+                    <input type="submit" class="btn btn-primary" name="submitCuttingSheetSelection" value="(+)" />
+                    <table class="table" style="width:50%;">
+                    {% for output in cuttingPattern.outputs %}
+                        <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;{{ output.retailSize }}</td><td>{{ output.isCradled }}</td><td>(qty: {{ output.quantity }})</td></tr>
+                    {% endfor %}
+                    </table>
+                </div>
+            {% endfor %}
+            <input type="submit" class="btn btn-primary" name="submitCuttingSheetSelection" value="Add to Cutting Sheet" />
+        {% endif %}
+    </div>
+
+    <div style="width:40%">
+        <input type="submit" name="submitNewCuttingSheet" class="pull-right btn btn-primary" style="margin-left:15px;" value="New Cutting Sheet" />
+        <!--<input type="submit" name="finalizeCuttingSheet" class="pull-right btn btn-primary" value="Finalize Cutting Sheet" onclick="location.href = 'cuttingsheetprint';return false;" />  !-->
+        <a class="pull-right btn btn-primary" href="/production/cuttingpatterns/cuttingsheetprint?coating={{coating}}&depth={{depth}}" >Review & Finalize</a>
+        <input type="hidden" name="currentCuttingSheetId" id="currentCuttingSheetId" value="{{ currentSheet.sheetId }}"/>
+        {% if currentSheetSummary %}
+        <div style="display:block;" class="clearfix">
+            <h3>Retail Outputs</h3>
+            <table class="table">
+                <tr><th>Size</th><th>Cuadro/Flat</th><th>Quantity</th></tr>
+                {% for outputTotal in currentSheetSummary.outputTotals %}
+                    <tr><td>{{ outputTotal.retailSize }} </td><td>{{ outputTotal.isCradled }}</td><td>{{ outputTotal.quantity }}</td></tr>
+                {% endfor %}
+            </table>
+            <h3>Terceros Required</h3>
+            <table class="table">
+                <tr><th>Tercero</th><th>Grade</th><th>Quantity</th></tr>
+                {% for requiredTercero in currentSheetSummary.requiredTerceros %}
+                    <tr><td>{{ requiredTercero.tercero }}</td><td>{{ requiredTercero.grade }}</td><td>{{ requiredTercero.quantity }}</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        <div style="display:none;">
+        Vars:<br />
+        testvar: {{ testvar }}<br />
+        testvarb: {{ testvarb }}<br />
+        testvarc: {{ testvarc }}<br />
+        status: {{ status }}
+        </div>
+    </div>
+</div>
+<div>
+    <div style="display:block;">
+        <h2 style="display:none;">Shortages and Inventory</h2>
+        {{ testvarc }}
+    </div>
+
+</div>
+</form>
+{% endblock %}

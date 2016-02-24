@@ -1,0 +1,20 @@
+{# Overwite default bootstrap_dynamic_formset template #}
+{#{% bootstrap_dynamic_formset formset_grades can_delete=True form_wrapper='' layout='inline' %}#}
+
+{% load bootstrap3 bootstrap_dynamic_formsets %}
+
+{% bootstrap_dynamic_formset_js %}
+
+<!-- Empty form -->
+<div class="display:none" id="empty-form-grades">
+	{% include 'production/_grade_form.html' with form=formset.empty_form %}
+</div>
+
+<div id="sortable">
+	{{ formset.management_form }}
+	{% for form in formset %}
+		{% include 'production/_grade_form.html' %}
+	{% endfor %}
+</div>
+
+

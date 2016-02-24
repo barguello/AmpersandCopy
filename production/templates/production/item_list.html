@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% load bootstrap3 %}
+
+{% block scriptcontent %}
+	<script type="text/javascript">
+		$(function () {
+			$('[data-toggle="tooltip"]').tooltip({container: 'body'});
+
+			$('[type="reset"]').on('click', function () {
+				var $form = $(this).closest('form');
+				$form.find('select').val('');
+				$form.submit()
+			})
+		})
+	</script>
+{% endblock %}
+
+{% block pageHeader %}<a href="{% url 'item_add' %}" class="btn btn-primary pull-right">Add Item</a>Items
+	<small>-- {{ paginator.count }} objects found | Page {{ page_obj.number }} of {{ paginator.num_pages }}</small>
+{% endblock %}
+
+{% block content %}
+	<form action="" method="post">
+		{% csrf_token %}
+		<div class="row">
+			<div class="col-md-2">{% bootstrap_field form.retail_size set_required=False show_help=False %}</div>
+			<div class="col-md-2">{% bootstrap_field form.coating set_required=False show_help=False %}</div>
+			<div class="col-md-2">{% bootstrap_field form.panel_depth set_required=False show_help=False %}</div>
+			<div class="col-md-2">{% bootstrap_field form.cradle_depth set_required=False show_help=False %}</div>
+			<div class="col-md-2">{% bootstrap_field form.cradle_width set_required=False show_help=False %}</div>
+			<div class="col-md-2">{% bootstrap_field form.spray_color set_required=False show_help=False %}</div>
+			<div class="col-md-2">
+				{% bootstrap_field form.is_active %}
+				</div>
+			<div class="col-md-10">
+				<br/>
+				{% bootstrap_button "Apply" button_type='submit' icon='filter' %}
+				{% bootstrap_button "Clear" button_type='reset' button_class='btn-danger' icon='remove-sign' %}
+			</div>
+		</div>
+	</form>
+
+	<hr />
+
+	<!-- Paginator -->
+	{% include '_paginator.html' %}
+
+	<div class="row">
+		{% for item in object_list %}
+			<div class="col-sm-6 col-md-4 {{ item.is_active|yesno:',text-muted' }}">
+				<div class="panel panel-{{ item.is_active|yesno:'info,default' }} item">
+					<div class="panel-heading">
+						<div class="item-toolbar btn-group" role="group">
+							{% comment %}<a href="#" class="btn btn-primary btn-xs" data-toggle="tooltip"
+									title="Add Pack">{% bootstrap_icon "th-large" %}</a>{% endcomment %}
+							<a href="{% url 'item_edit' item.pk %}" class="btn btn-success btn-xs" data-toggle="tooltip"
+									title="Edit">{% bootstrap_icon "pencil" %}</a>
+							<a href="{% url 'item_delete' item.pk %}" class="btn btn-danger btn-xs" data-toggle="tooltip"
+									title="Delete">{% bootstrap_icon "trash" %}</a>
+						</div>
+						<h3 class="panel-title">
+							<span class="badge pull-right"
+									title="Quantity" data-toggle="tooltip">{{ item.case_quantity }}</span>
+							<span title="SKU" data-toggle="tooltip">#{{ item.ampersand_sku }}</span></h3>
+					</div>
+
+					<div class="panel-body">{{ item.description }}</div>
+
+					<ul class="list-group packs" title="Recipes" data-toggle="tooltip">
+						{% for pack in item.pack_set.all %}
+							<li class="list-group-item">
+
+								{% comment %}<div class="item-toolbar btn-group" role="group">
+									<a href="#" class="btn btn-success btn-xs" data-toggle="tooltip"
+											title="Edit">{% bootstrap_icon "pencil" %}</a>
+									<a href="#" class="btn btn-danger btn-xs" data-toggle="tooltip"
+											title="Delete">{% bootstrap_icon "trash" %}</a>
+								</div>{% endcomment %}
+								<span class="badge" title="Pack Quantity" data-toggle="tooltip">{{ pack.pack_quantity }}</span>
+								{{ pack.item_recipe.verbose_name }}
+							</li>
+						{% endfor %}
+					</ul>
+
+				</div>
+			</div>
+		{% empty %}
+			{% bootstrap_alert "No items found." alert_type='warning' dismissable=False %}
+		{% endfor %}
+	</div>
+
+	<!-- Paginator -->
+	{% include '_paginator.html' %}
+{% endblock %}
+

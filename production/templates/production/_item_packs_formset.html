@@ -1,0 +1,20 @@
+{# Overwite default bootstrap_dynamic_formset template #}
+{#{% bootstrap_dynamic_formset formset can_delete=True form_wrapper='' layout='horizontal' %}#}
+
+{% load bootstrap3 bootstrap_dynamic_formsets %}
+
+{% bootstrap_dynamic_formset_js %}
+
+<link href="{{ STATIC_URL }}django_bootstrap_dynamic_formsets/extra.css" rel="stylesheet">
+
+<!-- Empty form -->
+<div class="display:none" id="empty-form">
+	{% include 'production/_select_recipe_form.html' with form=formset.empty_form %}
+</div>
+
+<div id="sortable">
+	{{ formset.management_form }}
+	{% for form in formset %}
+		{% include 'production/_select_recipe_form.html' %}
+	{% endfor %}
+</div>

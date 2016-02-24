@@ -1,0 +1,19 @@
+{% load bootstrap3 %}
+
+<div class="sort-item-grades">
+	{% bootstrap_field form.DELETE %}
+	{% for hidden in form.hidden_fields %}
+		{{ hidden }}
+	{% endfor %}
+	{% for field in form.visible_fields %}
+		<div class="form-group">
+			<div class="input-group">
+				{{ field }}
+				<span class="input-group-btn">
+					{% bootstrap_button "" button_type='button' button_class='btn-primary add-form-grades' icon='plus' %}
+					{% bootstrap_button "" button_type='button' button_class='btn-danger delete-form-grades' icon='trash' %}
+				</span>
+			</div>
+		</div>
+	{% endfor %}
+</div>

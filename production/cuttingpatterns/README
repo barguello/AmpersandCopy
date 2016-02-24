@@ -1,0 +1,4 @@
+use retrieve_wip.py to get wip quantities
+use save_wip to save or update wip
+
+get.py only has slave functions

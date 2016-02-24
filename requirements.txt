@@ -1,0 +1,8 @@
+Django==1.7.11
+MySQL-python==1.2.5
+numpy==1.10.1
+pandas==0.17.1
+django-bootstrap3
+-e git+https://github.com/sneawo/django-bootstrap-dynamic-formsets.git#egg=django-bootstrap-dynamic-formsets
+django-braces
+django-bootstrap3-datetimepicker

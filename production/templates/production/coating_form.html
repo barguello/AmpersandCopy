@@ -1,0 +1,8 @@
+{% extends 'production/component_form.html' %}
+
+{% block pageHeader %}Edit Coating{% endblock %}
+
+{% block cancel_button %}
+	{% url 'coating_list' as cancel_url %}
+	{{ block.super }}
+{% endblock %}

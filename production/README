@@ -1,0 +1,14 @@
+admin.py - ?
+customers - modules that manage the customer part of the UI
+cuttingpatterns - modules that manage the cutting patterns
+inventory - modules that manage inventory
+items - modules that manage items
+migrations - holds database migrations
+models.py - holds the UI objects such as items, customers, cutting patterns, etc
+orders - module that manages orders
+static - static site files
+templates - holds site templates
+tests.py - contains tests
+urls.py - does url mapping
+utils - contains modules that are used throughout different parts of UI
+views.py - site-level views

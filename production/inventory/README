@@ -1,0 +1,4 @@
+get.py is a slave module for getting only relevant retail sizes
+
+retrieve_wip.py is used to get wip quantities
+save_wip.py is used to save wip to the database

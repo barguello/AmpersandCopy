@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block pageHeader %}Product Management{% endblock %}
+
+{% block content %}
+    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+        <li><a href="#lookupBySku" data-toggle="tab">Recipe by SKU</a></li>
+        <li><a href="#lookupByFilters" data-toggle="tab">Item By Recipe</a></li>
+    </ul>
+
+ <div id="my-tab-content" class="tab-content">
+    <div class="tab-pane" id="lookupBySku">
+
+        Please enter desired SKU to load recipe
+        <form name="ItemViewForm" method="POST">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" name="submitSkuForm" value="Load Recipe" />
+        </form>
+
+        {% if arecipe %}
+            <br /><br /><h1>Recipe For: <b>{{ arecipe.description }}</b></h1><br />
+                <table style="width:100%">
+                <tr>
+                    <th>Retail Size</th> <th>Panel Depth</th> <th>Coating</th> <th>Cradle Details</th> <th>Spray Color</th>
+                </tr>
+                <tr>
+                    <td>{{ arecipe.retail_size}}</td>
+                    <td>{{ arecipe.panel_depth }}</td>
+                    <td>{{ arecipe.coating }}</td>
+                    <td>{{ arecipe.cradle_width }} (w), {{ arecipe.cradle_depth }} (d)</td>
+                    <td>{{ arecipe.spray_color }}</td>
+                </tr></table>
+        {% else %}
+            <div>Please enter a SKU to see its recipe</div>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane active" id="lookupByFilters">
+
+        <form name="ItemViewForm" method="POST">
+        <div style="display:-webkit-box;">
+            <div style="width:40%;">
+                Please enter desired recipe components
+                {% csrf_token %}
+                {{ recipe_form.as_p }}
+                <input type="submit" name="submitRecipeForm" value="Load Item" />
+        </form>
+
+        {% csrf_token %}
+        {% if items %}
+            <br/> <br /><h1>Item: </h1> <br/>
+            <table style="width:100%">
+                <tr>
+                    <th>Item SKU</th> <th>Item Description</th>
+                </tr>
+                {% for item in items %}
+                    <tr>
+                        <td> {{item.sku}} </td>
+                        <td> {{item.description}} </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <div>Please enter recipe components to see items</div>
+        {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

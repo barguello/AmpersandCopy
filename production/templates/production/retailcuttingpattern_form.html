@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% load bootstrap3 bootstrap_dynamic_formsets %}
+
+{% block pageHeader %}Cutting Patterns Form{% endblock %}
+
+{% block scriptcontent %}
+	{{ formset_output.media.js }}
+{% endblock %}
+
+{% block content %}
+	<form method="post" action="" role="form">
+		{% csrf_token %}
+		<fieldset class="form-horizontal">
+			<div class="form-group">
+				{% bootstrap_label "Current Pattern ID" label_class='col-md-3 control-label' %}
+				<p class="form-control-static col-md-9">{{ form.instance.id }}</p>
+			</div>
+			{% for field in form %}
+				{% if field.name == 'grade' %}
+					<div class="row grades">
+						{% bootstrap_label "Grades" label_class='col-md-3 control-label' label_for=field.id_for_label %}
+						{% bootstrap_field field show_label=False form_group_class='col-md-2' layout='inline' %}
+						<div class="form-inline formset-grades col-md-7">
+							{% include 'production/_grades_formset.html' with formset=formset_grades can_order=False can_delete=True %}
+						</div>
+					</div>
+				{% else %}
+					{% bootstrap_field field layout='horizontal' %}
+				{% endif %}
+			{% endfor %}
+		</fieldset>
+
+		<fieldset class="form-inline formset-output">
+			<legend>Outputs</legend>
+			{{ formset_output.media.css }}
+			<div class="row">
+				<div class="col-md-9 col-md-offset-3">
+					{% bootstrap_dynamic_formset formset_output can_delete=True form_wrapper='' layout='inline' %}
+				</div>
+			</div>
+		</fieldset>
+
+		<div class="row">
+			{% buttons layout='horizontal' %}
+				<button type="submit" class="btn btn-primary">{% bootstrap_icon 'floppy-disk' %} Save</button>
+			{% endbuttons %}
+		</div>
+	</form>
+{% endblock %}

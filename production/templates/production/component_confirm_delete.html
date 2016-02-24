@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% load bootstrap3 %}
+
+{% block pageHeader %}Delete {{ verbose_name|capfirst }}{% endblock %}
+
+{% block content %}
+	<form action="" method="post">
+		{% csrf_token %}
+		{{ form }}
+		<p>Are you sure you want to delete the object <strong>{{ object }}</strong>?</p>
+		{% bootstrap_button "Cancel" href=cancel_url button_class='btn-primary' icon='ban-circle' %}
+		{% bootstrap_button "Delete" button_type='submit' button_class='btn-danger' icon='trash' %}
+	</form>
+{% endblock %}

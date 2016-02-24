@@ -1,0 +1,27 @@
+{% extends 'production/component_form.html' %}
+
+{% load bootstrap3 %}
+
+{% block pageHeader %}Edit Item{% endblock %}
+
+{% block scriptcontent %}
+	{# Popup to filter recipes on choose it in packs #}
+	{% include 'production/_recipe_search_popup.html' with form=recipe_filter_form %}
+	{{ formset_packs.media.js }}
+{% endblock %}
+
+{% block form_append %}
+	<fieldset class="packs-formset">
+		<legend>Packs</legend>
+		{% include 'production/_item_packs_formset.html' with formset=formset_packs can_order=False can_delete=True %}
+	</fieldset>
+	<hr/>
+{% endblock %}
+
+{% block cancel_button %}
+	{% url 'item_list' as cancel_url %}
+	{{ block.super }}
+{% endblock %}
+
+{# django-bootstrap-dynamic-formset requires to add the id to the submit button #}
+{% block submit_btn_attrs %}id="form-submit"{% endblock %}

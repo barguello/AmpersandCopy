@@ -1,0 +1,23 @@
+{
+  "name": "Production Line Management",
+  "version": "0.0.1",
+  "authors": [
+    "Julio Cesar <juliocesarrodriguezcruz@gmail.com>"
+  ],
+  "description": "Ampersand Production Line Management front-end libs",
+  "moduleType": [
+    "amd"
+  ],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "production/static/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery-ui": "~1.11.4"
+  }
+}

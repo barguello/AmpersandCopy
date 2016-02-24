@@ -1,0 +1,20 @@
+django-admin.py startproject mysite  -> for creating a project
+
+python manage.py runserver -> to start the server
+
+python manage.py syncdb -> to create appropriate database tables.  this command will create tables for all apps found in models.py which don't already have tables
+
+make sure to uncomment admin lines before doing anything!!
+
+python manage.py startapp polls -> to create an app called polls
+
+you can supply a human-readable name as the first argument of a database field
+
+python manage.py sql polls  -> to check what the create table statements look likee
+
+models.py is where database tables are stored
+
+to import a model use: from production.models import "Model"
+
+
+
